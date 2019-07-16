@@ -27,10 +27,3 @@ ${SOLVER_CC}
 target_link_libraries(${PROJECT_NAME}
 )
 
-add_executable(Test
-test.cc
-)
-
-target_link_libraries(Test
-${PROJECT_NAME}
-)
