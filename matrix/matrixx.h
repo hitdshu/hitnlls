@@ -39,6 +39,7 @@ public:
     Matrixx<ValueType> &operator=(const Matrixx<ValueType> &matx);
     Matrixx<ValueType> &operator=(const ValueType &val);
 
+    ValueType Norm() const;
     Matrixx<ValueType> Transpose() const;
     Matrixx<ValueType> Block(int rsidx, int csidx, int rows, int cols) const;
     Matrixx<ValueType> &SetBlock(int rsidx, int csidx, int rows, int cols, const Matrixx<ValueType> &matx);
@@ -309,6 +310,17 @@ Matrixx<ValueType> &Matrixx<ValueType>::operator-=(const ValueType &val) {
         }
     }
     return *this;
+}
+
+template <typename ValueType>
+ValueType Matrixx<ValueType>::Norm() const {
+    ValueType norm = 0;
+    for (int ridx = 0; ridx < nrows_; ++ridx) {
+        for (int cidx = 0; cidx < ncols_; ++cidx) {
+            norm += this->operator()(ridx, cidx) * this->operator()(ridx, cidx);
+        }
+    }
+    return sqrt(norm);
 }
 
 template <typename ValueType>
