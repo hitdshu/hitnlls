@@ -8,7 +8,8 @@ namespace node {
 
 class SO3 {
 public:
-    SO3(const ::hitnlls::matrix::Vector4f &quat = ::hitnlls::matrix::Vector4f()) { quat_ = quat; }
+    SO3(const ::hitnlls::matrix::Vector4f &quat) { quat_ = quat; }
+    SO3() { quat_[0] = 1; quat_[1] = 0; quat_[2] = 0; quat_[3] = 0; }
 
     SO3 operator+(const ::hitnlls::matrix::Vector3f &inc) const {
         ::hitnlls::matrix::Vector4f inc_quat = ToExp(inc);
@@ -37,7 +38,16 @@ public:
         return *this;
     }
 
-    ::hitnlls::matrix::Matrix33f ToMatrix33f() {
+    float W() const { return quat_[0]; }
+    float X() const { return quat_[1]; }
+    float Y() const { return quat_[2]; }
+    float Z() const { return quat_[3]; }
+    float &W() { return quat_[0]; }
+    float &X() { return quat_[1]; }
+    float &Y() { return quat_[2]; }
+    float &Z() { return quat_[3]; }
+
+    ::hitnlls::matrix::Matrix33f ToMatrix33f() const {
         ::hitnlls::matrix::Matrix33f result;
         result(0, 0) = quat_[0] * quat_[0] + quat_[1] * quat_[1] - quat_[2] * quat_[2] - quat_[3] * quat_[3];
         result(0, 1) = 2 * (quat_[1] * quat_[2] - quat_[0] * quat_[3]);

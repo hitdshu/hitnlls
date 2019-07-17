@@ -27,3 +27,9 @@ ${SOLVER_CC}
 target_link_libraries(${PROJECT_NAME}
 )
 
+file(GLOB TEST_CC "${PROJECT_SOURCE_DIR}/test/*.cc")
+
+add_executable(RunAllTest
+${TEST_CC})
+target_link_libraries(RunAllTest
+${PROJECT_NAME})
