@@ -3,7 +3,6 @@
 #include "solver/gn_solver.h"
 #include "graph/naive_graph.h"
 #include "catch/catch.hpp"
-#include <iostream>
 
 TEST_CASE( "Test 1 factor/1 node lls", "[lls]") {
     ::hitnlls::node::NodeVec2 nv2;
