@@ -242,6 +242,7 @@ using Matrix22i = Matrix<int, 2, 2>;
 using Matrix44f = Matrix<float, 4, 4>;
 using Matrix44d = Matrix<double, 4, 4>;
 using Matrix44i = Matrix<int, 4, 4>;
+using Matrix32f = Matrix<float, 3, 2>;
 
 using Vector3f = Matrix<float, 3, 1>;
 using Vector3d = Matrix<double, 3, 1>;

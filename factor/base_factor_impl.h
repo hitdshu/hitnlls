@@ -11,7 +11,7 @@ namespace factor {
 template <int nnodes, int ndim>
 class BaseFactorImpl : public BaseFactor {
 public:
-    BaseFactorImpl() : BaseFactor(nnodes, ndim) { meas_ = ::hitnlls::matrix::Matrix<float, ndim, ndim>::Identity(); }
+    BaseFactorImpl() : BaseFactor(nnodes, ndim) { info_ = ::hitnlls::matrix::Matrix<float, ndim, ndim>::Identity(); }
     virtual ~BaseFactorImpl() {}
 
     virtual ::hitnlls::matrix::Matrix<float, ndim, 1> Evaluate() = 0;
