@@ -12,11 +12,9 @@ public:
     virtual ::hitnlls::matrix::Matrixxf Jacobian(int nidx) override;
 
     void SetA(const ::hitnlls::matrix::Matrix32f &matA) { matA_ = matA; }
-    void Setb(const ::hitnlls::matrix::Vector3f &b) { b_ = b; }
 
 protected:
     ::hitnlls::matrix::Matrix32f matA_;
-    ::hitnlls::matrix::Vector3f b_;
 };
 
 } // namespace factor

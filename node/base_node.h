@@ -31,7 +31,6 @@ public:
         }
     }
     virtual bool CheckUpdate(const ::hitnlls::matrix::Matrixxf &inc) final {
-        std::cout << "Inc rows " << inc.Rows() << " inc cols " << inc.Cols() << std::endl;
         if(inc.Rows() == ndim_ && inc.Cols() == 1) {
             return true; 
         } else {
