@@ -6,7 +6,7 @@ namespace hitnlls {
 namespace solver {
 
 void LmSolver::Optimize() {
-    const int lm_iter_num = 5;
+    const int lm_iter_num = 6;
     float error_bef = std::numeric_limits<float>::max();
     float error_aft = std::numeric_limits<float>::max();
     float lambda = 0;
