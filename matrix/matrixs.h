@@ -20,6 +20,9 @@ public:
     inline Vecxs<ValueType> &operator[](int ridx) { return rvecs_[ridx]; }
     inline Vecxs<ValueType> operator[](int ridx) const { return rvecs_[ridx]; }
 
+    inline int Rows() const { return nrows_; }
+    inline int Cols() const { return ncols_; }
+
     inline void Delete(int ridx, int cidx) { rvecs_[ridx].Delete(cidx); }
     inline bool HasValue(int ridx, int cidx) const { return rvecs_[ridx].HasValue(cidx); }
     inline void SetLambdalm(double lm) { lm_lambda_ = lm; }

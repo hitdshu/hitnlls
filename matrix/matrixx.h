@@ -4,6 +4,7 @@
 #include <memory>
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 #include <cstring>
 #include <cmath>
 #include <cassert>
@@ -45,6 +46,7 @@ public:
     Matrixx<ValueType> &SetBlock(int rsidx, int csidx, int rows, int cols, const Matrixx<ValueType> &matx);
     Matrixx<ValueType> SolveAxb(const Matrixx<ValueType> &b) const;
     Matrixx<ValueType> Inverse() const;
+    ValueType MaxDiagonalValue() const;
 
     void SetLowtri();
     bool CholeskyLLT(Matrixx<ValueType> &chol) const;
@@ -356,6 +358,17 @@ Matrixx<ValueType> &Matrixx<ValueType>::SetBlock(int rsidx, int csidx, int rows,
         }
     }
     return *this;
+}
+
+template <typename ValueType>
+ValueType Matrixx<ValueType>::MaxDiagonalValue() const {
+    ValueType result = 0;
+    for (int idx = 0; idx < ::std::min(nrows_, ncols_); ++idx) {
+        if (this->operator()(idx, idx) > result) {
+            result = this->operator()(idx, idx);
+        }
+    }
+    return result;
 }
 
 template <typename ValueType>
