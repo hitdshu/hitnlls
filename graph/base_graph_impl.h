@@ -2,7 +2,6 @@
 
 #include "graph/base_graph.h"
 #include "matrix/matrixx.h"
-#include "matrix/matrixsym.h"
 
 namespace hitnlls {
 namespace graph {
