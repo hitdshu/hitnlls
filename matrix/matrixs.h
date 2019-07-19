@@ -25,6 +25,8 @@ public:
 
     inline void Delete(int ridx, int cidx) { rvecs_[ridx].Delete(cidx); }
     inline bool HasValue(int ridx, int cidx) const { return rvecs_[ridx].HasValue(cidx); }
+    inline int NumElementsInRow(int ridx, int cidx = 0) const { return rvecs_[ridx].GetIndicesget(cidx).size(); }
+    inline ::std::vector<int> ElementsInRow(int ridx, int cidx = 0) const { return rvecs_[ridx].GetIndicesget(cidx); }
     inline void SetLambdalm(double lm) { lm_lambda_ = lm; }
 
     Matrixs<ValueType> operator+(const Matrixs<ValueType> &smat) const;
