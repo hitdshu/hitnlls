@@ -6,6 +6,7 @@ namespace hitnlls {
 namespace solver {
 
 void LmSolver::Optimize() {
+    const int lm_iter_num = 5;
     float error_bef = std::numeric_limits<float>::max();
     float error_aft = std::numeric_limits<float>::max();
     float lambda = 0;
@@ -24,12 +25,15 @@ void LmSolver::Optimize() {
         matA.SetLambdalm(lambda);
         ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> inc = matA.SolveWithlm(vecb);
         int lm_idx = 0;
-        while (!graph_->UpdateInc(inc) && lm_idx < 7) {
+        while (!graph_->UpdateInc(inc) && lm_idx < lm_iter_num) {
             lambda *= 10;
             matA.SetLambdalm(lambda);
             inc = matA.SolveWithlm(vecb);
             ++lm_idx;
-        } 
+        }
+        if (lm_iter_num == lm_idx) {
+            return;
+        }
         lambda /= 10;
 
         error_aft = graph_->ComputeGraphError();
