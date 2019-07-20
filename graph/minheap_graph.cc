@@ -3,24 +3,19 @@
 #include <map>
 #include <algorithm>
 #include <vector>
+#include <list>
+#include <limits>
 
 namespace hitnlls {
 namespace graph {
 
 namespace {
-
-struct HeapElement {
+struct Element {
     int nid;
     int idx;
     int ncn;
+    int oid;
 };
-
-struct HeapCompare {
-    bool operator()(const HeapElement &e1, const HeapElement &e2) {
-        return e1.ncn > e2.ncn;
-    }
-};
-
 }
 
 void MinheapGraph::SymbolicAnalysis() {
@@ -46,19 +41,53 @@ void MinheapGraph::SymbolicAnalysis() {
             }
         }
     }
-    ::std::vector<HeapElement> reord_heap;
+    ::std::vector<Element> elements;
+    ::std::map<int, ::std::list<Element *>>  ele_heap;
     for (int idx = 0; idx < symb_smat.Rows(); ++idx) {
-        HeapElement tmp_ele;
+        Element tmp_ele;
         tmp_ele.nid = ordering_[idx];
-        tmp_ele.idx = idx;
         tmp_ele.ncn = symb_smat.NumElementsInRow(idx) - 1;
-        reord_heap.push_back(tmp_ele);
+        tmp_ele.oid = symb_smat.Rows() - 1;
+        tmp_ele.idx = idx;
+        elements.push_back(tmp_ele);
+        ele_heap[tmp_ele.ncn].push_back(&tmp_ele);
     }
-    HeapCompare comp;
-    ::std::make_heap(reord_heap.begin(), reord_heap.end(), comp);
-    ::std::sort_heap(reord_heap.begin(), reord_heap.end(), comp);
-    for (int idx = 0; idx < symb_smat.Rows(); ++idx) {
-        ordering_[idx] = reord_heap[idx].nid;
+    for (int idx = 0; idx < symb_smat.Rows() - 1; ++idx) {
+        Element *lst_ncn = nullptr;
+        while (1) {
+            lst_ncn = ele_heap.begin()->second.front();
+            if (ele_heap.begin()->first != lst_ncn->ncn) {
+                ele_heap.begin()->second.pop_front();
+                ele_heap[lst_ncn->ncn].push_back(lst_ncn);
+                if (0 == ele_heap.begin()->second.size()) {
+                    ele_heap.erase(ele_heap.begin());
+                }
+            } else {
+                ele_heap.begin()->second.pop_front();
+                if (0 == ele_heap.begin()->second.size()) {
+                    ele_heap.erase(ele_heap.begin());
+                }
+            }
+        }
+        lst_ncn->oid = idx;
+        ::std::vector<int> nn = symb_smat.ElementsInRow(lst_ncn->idx);
+        for (auto nn_iter = nn.begin(); nn_iter != nn.end(); ++nn_iter) {
+            if (*nn_iter == lst_ncn->nid) {
+                continue;
+            }
+            --(elements[*nn_iter].ncn);
+            for (auto nn_iter_n = ++nn_iter; nn_iter_n != nn.end(); ++nn_iter_n) {
+                if (*nn_iter_n == lst_ncn->nid) {
+                    continue;
+                }
+                if (!symb_smat.HasValue(*nn_iter, *nn_iter_n)) {
+                    symb_smat(*nn_iter, *nn_iter_n) = 1;
+                    symb_smat(*nn_iter_n, *nn_iter) = 1;
+                    ++(elements[*nn_iter].ncn);
+                    ++(elements[*nn_iter_n].ncn);
+                }
+            }
+        }
     }
 }
 

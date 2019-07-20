@@ -5,8 +5,8 @@ namespace hitnlls {
 namespace solver {
 
 void GnSolver::Optimize() {
-    float error_bef = std::numeric_limits<float>::max();
-    float error_aft = std::numeric_limits<float>::max();
+    float error_bef = ::std::numeric_limits<float>::max();
+    float error_aft = ::std::numeric_limits<float>::max();
     for (int sidx = 0; sidx < steps_; ++sidx) {
         ::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf> matA;
         ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> vecb;
