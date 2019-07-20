@@ -89,6 +89,10 @@ void MinheapGraph::SymbolicAnalysis() {
             }
         }
     }
+    for (auto iter = elements.begin(); iter != elements.end(); ++iter) {
+        ordering_[iter->oid] = iter->nid;
+    }
+    return;
 }
 
 HITNLLS_REGISTER_GRAPH(MinheapGraph);
