@@ -2,6 +2,7 @@
 
 #include "graph/base_graph.h"
 #include "matrix/matrixx.h"
+#include <set>
 
 namespace hitnlls {
 namespace graph {
@@ -17,8 +18,52 @@ public:
         }
         return error;
     }
+    virtual void MarginalizationAnalysis() final {
+        ::std::set<int> marg_node_ids;
+        ::std::set<int> nomg_node_ids;
+        ::std::set<int> factor_node_ids;
+        for (auto iter = nodes_.begin(); iter != nodes_.end(); ++iter) {
+            if (!(iter->second)->GetFixed()) {
+                if ((iter->second)->GetMarginalized()) {
+                    marg_node_ids.insert(iter->first);
+                } else {
+                    nomg_node_ids.insert(iter->first);
+                }
+            }
+        }
+        for (size_t idx = 0; idx < factors_.size(); ++idx) {
+            for (int nidx = 0; nidx < factors_[idx]->GetNnodes(); ++nidx) {
+                int nid = factors_[idx]->GetNodeId(nidx);
+                factor_node_ids.insert(nid);
+            }
+        }
+        ::std::set<int> effe_marg_node_ids;
+        ::std::set<int> effe_nomg_node_ids;
+        for (auto iter = marg_node_ids.begin(); iter != marg_node_ids.end(); ++iter) {
+            if (1 == factor_node_ids.count(*iter)) {
+                effe_marg_node_ids.insert(*iter);
+            }
+        }
+        for (auto iter = nomg_node_ids.begin(); iter != nomg_node_ids.end(); ++iter) {
+            if (1 == factor_node_ids.count(*iter)) {
+                effe_nomg_node_ids.insert(*iter);
+            }
+        }
+        ordering_ = ::hitnlls::matrix::Matrixxi(effe_marg_node_ids.size() + effe_nomg_node_ids.size(), 1);
+        int ridx = 0;
+        for (auto iter = effe_marg_node_ids.begin(); iter != effe_marg_node_ids.end(); ++iter) {
+            ordering_[ridx++] = *iter;
+        }
+        for (auto iter = effe_nomg_node_ids.begin(); iter != effe_nomg_node_ids.end(); ++iter) {
+            ordering_[ridx++] = *iter;
+        }
+    }
     virtual void BuildProblem(::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf> &matA, ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> &vecb) override final {
-        SymbolicAnalysis();
+        if (!HasMarginalization()) {
+            SymbolicAnalysis();
+        } else {
+            MarginalizationAnalysis();
+        }
         matA = ::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf>(ordering_.Rows(), ordering_.Rows());
         vecb = ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf>(ordering_.Rows());
         std::map<int, int> id2ordering;

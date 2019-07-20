@@ -17,6 +17,14 @@ public:
 
     virtual void AddNode(::hitnlls::node::BaseNode *node) final { nodes_[node->GetId()] = node; }
     virtual void AddFactor(::hitnlls::factor::BaseFactor *factor) final { factors_.push_back(factor); }
+    virtual bool HasMarginalization() const final {
+        for (auto iter = nodes_.begin(); iter != nodes_.end(); ++iter) {
+            if (iter->second->GetMarginalized()) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     virtual void BuildProblem(::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf> &matA, ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> &vecb) = 0;
     virtual bool UpdateInc(const ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> &inc) = 0;
