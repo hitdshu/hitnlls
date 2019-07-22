@@ -58,13 +58,13 @@ public:
             ordering_[ridx++] = *iter;
         }
     }
-    virtual void BuildProblem(::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf> &matA, ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> &vecb) override final {
+    virtual void BuildProblem(::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf> &mat_a, ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> &vecb) override final {
         if (!HasMarginalization()) {
             SymbolicAnalysis();
         } else {
             MarginalizationAnalysis();
         }
-        matA = ::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf>(ordering_.Rows(), ordering_.Rows());
+        mat_a = ::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf>(ordering_.Rows(), ordering_.Rows());
         vecb = ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf>(ordering_.Rows());
         std::map<int, int> id2ordering;
         for (int idx = 0; idx < ordering_.Rows(); ++idx) {
@@ -79,7 +79,7 @@ public:
                     int nid2 = factors_[idx]->GetNodeId(nidx2);
                     if (0 == id2ordering.count(nid2))
                         continue;
-                    matA(id2ordering[nid1], id2ordering[nid2]) += factors_[idx]->GetJacobTInfoJacob(nidx1, nidx2);
+                    mat_a(id2ordering[nid1], id2ordering[nid2]) += factors_[idx]->GetJacobTInfoJacob(nidx1, nidx2);
                 }
                 vecb[id2ordering[nid1]] += factors_[idx]->GetJacobTInfoRes(nidx1);
             }

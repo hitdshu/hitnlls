@@ -26,7 +26,7 @@ public:
         return false;
     }
 
-    virtual void BuildProblem(::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf> &matA, ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> &vecb) = 0;
+    virtual void BuildProblem(::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf> &mat_a, ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> &vecb) = 0;
     virtual bool UpdateInc(const ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> &inc) = 0;
     virtual float ComputeGraphError() = 0;
 

@@ -32,9 +32,11 @@ public:
     Matrixs<ValueType> operator+(const Matrixs<ValueType> &smat) const;
     Matrixs<ValueType> operator-(const Matrixs<ValueType> &smat) const;
     Matrixs<ValueType> operator*(const Matrixs<ValueType> &smat) const;
+    Vecxs<ValueType> operator*(const Vecxs<ValueType> &svec) const;
 
     Matrixs<ValueType> Transpose() const;
     Matrixs<ValueType> CholeskyLLT() const;
+    Matrixs<ValueType> GetPreconditioner() const;
     Vecxs<ValueType> SolveWithlm(const Vecxs<ValueType> &b) const;
 
     void Print(const ::std::string &name = "") const;
@@ -91,7 +93,21 @@ Matrixs<ValueType> Matrixs<ValueType>::operator*(const Matrixs<ValueType> &smat)
         ::std::vector<int> crcols = this->operator[](ridx).GetIndices();
         for (size_t ccidx = 0; ccidx < crcols.size(); ++ccidx) {
             int cidx = crcols[ccidx];
-            result[ridx] += smat[cidx] * this->operator()(ridx, cidx);
+            result[ridx] += this->operator()(ridx, cidx) * smat[cidx];
+        }
+    }
+    return result;
+}
+
+template <typename ValueType>
+Vecxs<ValueType> Matrixs<ValueType>::operator*(const Vecxs<ValueType> &svec) const {
+    assert(ncols_ == svec.Length());
+    Vecxs<ValueType> result(nrows_);
+    for (int ridx = 0; ridx < nrows_; ++ridx) {
+        ::std::vector<int> crcols = this->operator[](ridx).GetIndices();
+        for (size_t ccidx = 0; ccidx < crcols.size(); ++ccidx) {
+            int cidx = crcols[ccidx];
+            result[ridx] += this->operator()(ridx, cidx) * svec[cidx];
         }
     }
     return result;
@@ -151,6 +167,16 @@ Matrixs<ValueType> Matrixs<ValueType>::CholeskyLLT() const {
         SetLowtriTraits<ValueType>::msetlt(chol(ridx, ridx));
     }
     return chol;
+}
+
+template <typename ValueType>
+Matrixs<ValueType> Matrixs<ValueType>::GetPreconditioner() const {
+    assert(nrows_ == ncols_);
+    Matrixs<ValueType> precond = Matrixs<ValueType>(nrows_, ncols_);
+    for (int idx = 0; idx < nrows_; ++idx) {
+        precond(idx, idx) = DiagonalInverseTraits<ValueType>::mdiaginv(this->operator()(idx, idx));
+    }
+    return precond;
 }
 
 template <typename ValueType>

@@ -11,24 +11,24 @@ void LmSolver::Optimize() {
     float error_aft = std::numeric_limits<float>::max();
     float lambda = 0;
     for (int sidx = 0; sidx < steps_; ++sidx) {
-        ::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf> matA;
+        ::hitnlls::matrix::Matrixs<::hitnlls::matrix::Matrixxf> mat_a;
         ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> vecb;
         error_bef = graph_->ComputeGraphError();
-        graph_->BuildProblem(matA, vecb);
+        graph_->BuildProblem(mat_a, vecb);
 
         if (0 == sidx) {
-            for (int ridx = 0; ridx < matA.Rows(); ++ridx) {
-                lambda = ::std::max(lambda, matA(ridx, ridx).MaxDiagonalValue());
+            for (int ridx = 0; ridx < mat_a.Rows(); ++ridx) {
+                lambda = ::std::max(lambda, mat_a(ridx, ridx).MaxDiagonalValue());
             }
             lambda *= 1e-4;
         }
-        matA.SetLambdalm(lambda);
-        ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> inc = matA.SolveWithlm(vecb);
+        mat_a.SetLambdalm(lambda);
+        ::hitnlls::matrix::Vecxs<::hitnlls::matrix::Matrixxf> inc = mat_a.SolveWithlm(vecb);
         int lm_idx = 0;
         while (!graph_->UpdateInc(inc) && lm_idx < lm_iter_num) {
             lambda *= 10;
-            matA.SetLambdalm(lambda);
-            inc = matA.SolveWithlm(vecb);
+            mat_a.SetLambdalm(lambda);
+            inc = mat_a.SolveWithlm(vecb);
             ++lm_idx;
         }
         if (lm_iter_num == lm_idx) {

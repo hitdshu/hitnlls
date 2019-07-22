@@ -46,6 +46,7 @@ public:
     Matrixx<ValueType> &SetBlock(int rsidx, int csidx, int rows, int cols, const Matrixx<ValueType> &matx);
     Matrixx<ValueType> SolveAxb(const Matrixx<ValueType> &b) const;
     Matrixx<ValueType> Inverse() const;
+    Matrixx<ValueType> DiagonalInverse() const;
     ValueType MaxDiagonalValue() const;
 
     void SetLowtri();
@@ -211,17 +212,30 @@ Matrixx<ValueType> Matrixx<ValueType>::operator-(const ValueType &val) const {
 
 template <typename ValueType>
 Matrixx<ValueType> Matrixx<ValueType>::operator*(const Matrixx<ValueType> &matx) const {
-    assert(ncols_ == matx.nrows_);
-    Matrixx<ValueType> result(nrows_, matx.Cols());
-    for (int ridx = 0; ridx < nrows_; ++ridx) {
-        for (int cidx = 0; cidx < matx.Cols(); ++cidx) {
-            result(ridx, cidx) = 0;
-            for (int iidx = 0; iidx < ncols_; ++iidx) {
-                result(ridx, cidx) += this->operator()(ridx, iidx) * matx(iidx, cidx);
+    if (ncols_ == matx.nrows_) {
+        Matrixx<ValueType> result(nrows_, matx.Cols());
+        for (int ridx = 0; ridx < nrows_; ++ridx) {
+            for (int cidx = 0; cidx < matx.Cols(); ++cidx) {
+                result(ridx, cidx) = 0;
+                for (int iidx = 0; iidx < ncols_; ++iidx) {
+                    result(ridx, cidx) += this->operator()(ridx, iidx) * matx(iidx, cidx);
+                }
             }
         }
+        return result;
+    } else if (nrows_ == matx.nrows_ && ncols_ == matx.ncols_) {
+        ValueType sum = 0;
+        for (int ridx = 0; ridx < nrows_; ++ridx) {
+            for (int cidx = 0; cidx < ncols_; ++cidx) {
+                sum += this->operator()(ridx, cidx) * matx(ridx, cidx);
+            }
+        }
+        Matrixx<ValueType> result(1, 1);
+        result(0, 0) = sum;
+        return result;
+    } else {
+        return Matrixx<ValueType>();
     }
-    return result;
 }
 
 template <typename ValueType>
@@ -399,6 +413,16 @@ Matrixx<ValueType> Matrixx<ValueType>::Inverse() const {
                 result(ridx, cidx) = vtmp[ridx];
             }
         }
+    }
+    return result;
+}
+
+template <typename ValueType>
+Matrixx<ValueType> Matrixx<ValueType>::DiagonalInverse() const {
+    assert(nrows_ == ncols_);
+    Matrixx<ValueType> result(nrows_, nrows_);
+    for (int idx = 0; idx < nrows_; ++idx) {
+        result(idx, idx) = 1 / this->operator()(idx, idx);
     }
     return result;
 }

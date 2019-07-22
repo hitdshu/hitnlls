@@ -4,7 +4,9 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <cmath>
 #include "matrix/matrixx.h"
+#include "matrix/mtraits.h"
 
 namespace hitnlls {
 namespace matrix {
@@ -33,11 +35,20 @@ public:
     inline void Delete(int idx);
     inline int Length() const { return len_; }
     inline int NzLen() const { return idx_value_.size(); }
+    double Norm() const;
     void Print(const ::std::string &name = "") const;
     ::std::vector<int> GetIndices() const;
     ::std::vector<int> GetIndicesget(const int &idx) const;
 
     friend ::std::ostream &operator<<(::std::ostream &out, const Vecxs<ValueType> &vec) { vec.Print(); return out; }
+    friend Vecxs<ValueType> operator*(const ValueType &val, const Vecxs<ValueType> &vec) {
+        Vecxs<ValueType> result(vec.len_);
+        ::std::vector<int> idxs = vec.GetIndices();
+        for (size_t idx = 0; idx < idxs.size(); ++idx) {
+            result[idx] = val * vec(idxs[idx]);   
+        }
+        return result;
+    }
 
 protected:
 
@@ -240,6 +251,15 @@ template <typename ValueType>
         }
     }
     return idxs;
+}
+
+template <typename ValueType>
+double Vecxs<ValueType>::Norm() const {
+    double norm_square = 0;
+    for (auto iter = idx_value_.begin(); iter != idx_value_.end(); ++iter) {
+        norm_square += NormSquareTraits<ValueType>::mnormsquare(iter->second);
+    }
+    return sqrt(norm_square);
 }
 
 using Vecis = Vecxs<int>;
