@@ -20,13 +20,25 @@ public:
     virtual float ComputeError() override final {
         residual_ = meas_ - Evaluate();
         ::hitnlls::matrix::Matrix<float, 1, 1> error = residual_.Transpose() * info_ * residual_;
+        if (kernel_) {
+            robust_info_ = kernel_->Robustify(error(0, 0));
+            return robust_info_[0];
+        }
         return error(0, 0);
     }
     virtual ::hitnlls::matrix::Matrixxf GetJacobTInfoRes(int nidx) override final {
-        return Jacobian(nidx).Transpose() * info_ * residual_;
+        if (kernel_) {
+            return Jacobian(nidx).Transpose() * info_ * residual_ * robust_info_[1];
+        } else {
+            return Jacobian(nidx).Transpose() * info_ * residual_;
+        }
     }
     virtual ::hitnlls::matrix::Matrixxf GetJacobTInfoJacob(int nidx1, int nidx2) override final {
-        return Jacobian(nidx1).Transpose() * info_ * Jacobian(nidx2);
+        if (kernel_) {
+            return Jacobian(nidx1).Transpose() * info_ * Jacobian(nidx2) * robust_info_[1];
+        } else {
+            return Jacobian(nidx1).Transpose() * info_ * Jacobian(nidx2);
+        }
     }
 
     virtual bool SetInformation(::hitnlls::matrix::Matrix<float, ndim, ndim> info) final { info_ = info; }
@@ -36,6 +48,7 @@ protected:
     ::hitnlls::matrix::Matrix<float, ndim, 1> meas_;
     ::hitnlls::matrix::Matrix<float, ndim, 1> residual_;
     ::hitnlls::matrix::Matrix<float, ndim, ndim> info_;
+    ::hitnlls::matrix::Vector3f robust_info_;
 };
 
 } // namespace factor

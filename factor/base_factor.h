@@ -3,6 +3,7 @@
 #include "matrix/matrixx.h"
 #include "node/base_node.h"
 #include "common/register.h"
+#include "factor/base_kernel.h"
 #include <map>
 
 namespace hitnlls {
@@ -10,11 +11,12 @@ namespace factor {
 
 class BaseFactor {
 public:
-    BaseFactor(int nnodes = -1, int ndim = -1) { nnodes_ = nnodes; ndim_ = ndim; }
+    BaseFactor(int nnodes = -1, int ndim = -1) { nnodes_ = nnodes; ndim_ = ndim; kernel_ = nullptr; }
     virtual ~BaseFactor() = default;
 
     virtual void SetNode(int nidx, ::hitnlls::node::BaseNode *node) final { nodes_[nidx] = node; }
     virtual ::hitnlls::node::BaseNode * GetNode(int nidx) final { return nodes_[nidx]; }
+    virtual void SetKernel(BaseKernel *kernel) final { kernel_ = kernel; }
     virtual int GetDim() const final { return ndim_; }
     virtual int GetNnodes() const final { return nnodes_; }
     virtual int GetNodeId(int nidx) final { return nodes_[nidx]->GetId(); }
@@ -28,6 +30,7 @@ public:
 
 protected:
     ::std::map<int, ::hitnlls::node::BaseNode *> nodes_;
+    BaseKernel *kernel_;
     int nnodes_;
     int ndim_;
 };
