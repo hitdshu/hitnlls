@@ -34,6 +34,13 @@ public:
     inline bool HasValue(int idx) const;
     inline void Delete(int idx);
     inline int Length() const { return len_; }
+    inline int LengthAll() const {
+        int total_len = 0;
+        for (auto iter = idx_value_.begin(); iter != idx_value_.end(); ++iter) {
+            total_len += LengthTraits<ValueType>::mlen(iter->second);
+        }
+        return total_len;
+    }
     inline int NzLen() const { return idx_value_.size(); }
     double Norm() const;
     void Print(const ::std::string &name = "") const;

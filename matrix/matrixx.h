@@ -257,7 +257,7 @@ Matrixx<ValueType> Matrixx<ValueType>::operator*(const ValueType &val) const {
 
 template <typename ValueType>
 Matrixx<ValueType> &Matrixx<ValueType>::operator+=(const Matrixx<ValueType> &matx) {
-    if (nrows_ == -1 || ncols_ == -1) {
+    if (nrows_ <= 0 || ncols_ <= 0) {
         this->operator=(matx);
         return *this;
     }

@@ -160,6 +160,28 @@ struct NormSquareTraits {
     typedef double (*MNormsquare)(const ValueType &);
     constexpr static MNormsquare mnormsquare = NormSquare<ValueType>;
 };
+
+template <typename ValueType>
+int Length(const ValueType &val) {
+    return val.Rows();
+}
+template <>
+int Length<int>(const int &val) {
+    return 1;
+}
+template <>
+int Length<float>(const float &val) {
+    return 1;
+}
+template <>
+int Length<double>(const double &val) {
+    return 1;
+}
+template <typename ValueType>
+struct LengthTraits {
+    typedef int (*MLength)(const ValueType &);
+    constexpr static MLength mlen = Length<ValueType>;
+};
 }
 
 } // namespace matrix
