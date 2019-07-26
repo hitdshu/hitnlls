@@ -47,7 +47,7 @@ public:
         position2_ -= posep.position2_;
         return *this;
     }
-    SE2 &operator*(const SE2 &posep) {
+    SE2 &operator*=(const SE2 &posep) {
         position2_ += so2_.ToMat22f() * posep.position2_;
         so2_ *= posep.so2_;
         return *this;
