@@ -34,7 +34,7 @@ public:
     BaseCamera() = default;
     virtual ~BaseCamera() = default;
 
-    virtual bool Init(const CameraParam &param) = 0;
+    virtual bool Init(CameraParam &param) = 0;
 
     virtual ::hitnlls::matrix::Vector3f Pixel2Ray(const ::hitnlls::matrix::Vector2f &pixel) const = 0;
     virtual ::std::vector<::hitnlls::matrix::Vector3f> Pixels2Rays(const std::vector<::hitnlls::matrix::Vector2f> &pixels) const = 0;
