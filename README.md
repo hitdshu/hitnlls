@@ -13,3 +13,6 @@ This solver uses Gauss-Newton type algorithms for NLLS problems. We define node 
 - solver: folder for optimization algorithms. We implement Gauss-Newton/LM/Preconditioned Conjugate Gradient methods.
 - utils: folder for utilities. Now only timer class is available.
 - test: folder for test cases. Have fun with them.
+
+# hitcadmm
+In directory cadmm. We recently(2020/2/14) developed a cone ADMM algorithm for convex cone optimization problem(LP/SOCP/SDP). Check files there if you feel interested. 
