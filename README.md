@@ -15,4 +15,4 @@ This solver uses Gauss-Newton type algorithms for NLLS problems. We define node 
 - test: folder for test cases. Have fun with them.
 
 # hitcadmm
-In directory cadmm. We recently(2020/2/14) developed a cone ADMM algorithm for convex cone optimization problem(LP/SOCP/SDP). Check files there if you feel interested. 
+In directory cadmm. We developed a cone ADMM algorithm for convex cone optimization problem(LP/SOCP/SDP). Check files there if you feel interested. 
