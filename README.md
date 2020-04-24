@@ -2,7 +2,7 @@
 A nonlinear least square(NLLS) solver. Fomulate the NLLS as graph optimization. For the name, HIT here refers to Harbin Institute of Technology to honor the six wonderful years spent there and NLLS is short for nonlinear least square. If you want to see our old version of HITNLLS, check branch v1.
 
 ## Abstract
-This solver uses Gauss-Newton type algorithms for NLLS problems. We define node to be variables waiting for optimization and factor to be observation over which jacobians and errors are evaluated. Without any dependence on other libraries, we choose to implement dense matrix and sparse matrix operations used in later computation. We've updated this new version of HITNLLS, which extensively uses template metaprogramming and CRTP to make the code more structured (and more difficult to read). If you want to see old version of HITNLLS, check the other branch of the repo.
+This solver uses Gauss-Newton type algorithms for NLLS problems. We define node to be variables waiting for optimization and factor to be observation over which jacobians and errors are evaluated. Without any dependence on other libraries, we choose to implement dense matrix and sparse matrix operations used in later computation. We've updated this new version of HITNLLS, which extensively uses template metaprogramming and CRTP to make the code more structured, more efficient (and more difficult to read). If you want to see old version of HITNLLS, check the other branch of the repo.
 
 ## Implementation
 
