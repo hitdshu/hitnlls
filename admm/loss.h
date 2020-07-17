@@ -1,26 +1,21 @@
 #pragma once
 
-#include <memory>
+#include "variable.h"
 
-#include "matrix/dense.h"
-#include "admm/variable.h"
-
-namespace hitcadmm {
+namespace nlls {
 
 class Loss {
 public:
-    typedef std::shared_ptr<Loss> Ptr;
-
-    explicit Loss(const Variable::Ptr &v, const hitnlls::matrix::MatrixXd &P, const hitnlls::matrix::VectorXd &q) { v_ = v; P_ = P; q_ = q; }
+    explicit Loss(Variable *v, const MatrixXf &P, const VectorXf &q) { v_ = v; P_ = P; q_ = q; }
     
-    Variable::Ptr GetV() const { return v_; }
-    hitnlls::matrix::MatrixXd GetP() const { return P_; }
-    hitnlls::matrix::VectorXd Getq() const { return q_; }
+    Variable *GetV() const { return v_; }
+    MatrixXf GetP() const { return P_; }
+    VectorXf Getq() const { return q_; }
 
 private:
-    Variable::Ptr v_;
-    hitnlls::matrix::MatrixXd P_;
-    hitnlls::matrix::VectorXd q_;
+    Variable *v_;
+    MatrixXf P_;
+    VectorXf q_;
 };
 
-} // namespace hitcadmm
+} // namespace nlls

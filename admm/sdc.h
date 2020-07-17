@@ -2,66 +2,91 @@
 
 #include <algorithm>
 
-#include "admm/variable.h"
+#include "variable.h"
 
-namespace hitcadmm {
+namespace nlls {
 
-template <int ndim>
-hitnlls::matrix::Matrix<double, ndim, ndim> Vec2Mat(const hitnlls::matrix::Matrix<double, ndim * ndim, 1> &v) {
-    hitnlls::matrix::Matrix<double, ndim, ndim> mat;
-    for (int cidx = 0; cidx < ndim; ++cidx) {
-        for (int ridx = 0; ridx < ndim; ++ridx) {
-            mat(ridx, cidx) = v[cidx * ndim + ridx];
+template <int N>
+Matrix<float, N, N> Vec2Mat(const Matrix<float, N * N, 1> &v) {
+    Matrix<float, N, N> mat;
+    for (int cidx = 0; cidx < N; ++cidx) {
+        for (int ridx = 0; ridx < N; ++ridx) {
+            mat(ridx, cidx) = v[ridx * N + cidx];
         }
     }
     return mat;
 }
 
-template <int ndim>
-hitnlls::matrix::Matrix<double, ndim * ndim, 1> Mat2Vec(const hitnlls::matrix::Matrix<double, ndim, ndim> &mat) {
-    hitnlls::matrix::Matrix<double, ndim * ndim, 1> v;
-    for (int cidx = 0; cidx < ndim; ++cidx) {
-        for (int ridx = 0; ridx < ndim; ++ridx) {
-            v[cidx * ndim + ridx] = mat(ridx, cidx);
+MatrixXf VecX2MatX(const VectorXf &v) {
+    using std::round;
+    int n = round(sqrt(v.Size()));
+    MatrixXf mat(n, n);
+    for (int cidx = 0; cidx < n; ++cidx) {
+        for (int ridx = 0; ridx < n; ++ridx) {
+            mat(ridx, cidx) = v[ridx * n + cidx];
+        }
+    }
+    return mat;
+}
+
+template <int N>
+Matrix<float, N * N, 1> Mat2Vec(const Matrix<float, N, N> &mat) {
+    Matrix<float, N * N, 1> v;
+    for (int ridx = 0; ridx < N; ++ridx) {
+        for (int cidx = 0; cidx < N; ++cidx) {
+            v[ridx * N + cidx] = mat(ridx, cidx);
         }
     }
     return v;
 }
 
-template <int ndim>
-class Sdc : public VariableImp<ndim * ndim, hitnlls::matrix::Matrix<double, ndim, ndim>> {
-public:
-    typedef std::shared_ptr<Sdc> Ptr;
+VectorXf MatX2VecX(const MatrixXf &mat) {
+    int n = mat.Rows();
+    VectorXf v(mat.Size());
+    for (int ridx = 0; ridx < n; ++ridx) {
+        for (int cidx = 0; cidx < n; ++cidx) {
+            v[ridx * n + cidx] = mat(ridx, cidx);
+        }
+    }
+    return v;
+}
 
-    explicit Sdc() : VariableImp<ndim * ndim, hitnlls::matrix::Matrix<double, ndim, ndim>>() {}
-    explicit Sdc(const hitnlls::matrix::Matrix<double, ndim, ndim> &val) : VariableImp<ndim * ndim, hitnlls::matrix::Matrix<double, ndim, ndim>>() { this->SetValue(val); }
+template <int N>
+class Sdc : public VariableImp<N * N, Matrix<float, N, N>> {
+public:
+    using BaseType = VariableImp<N * N, Matrix<float, N, N>>;
+    explicit Sdc() : BaseType() {}
+    explicit Sdc(const Matrix<float, N, N> &val) : BaseType() { BaseType::SetValue(val); }
 
     virtual void Project() override {
-        hitnlls::matrix::Matrix<double, ndim, ndim> val = this->GetValue();
-        hitnlls::matrix::EVD<hitnlls::matrix::Matrix<double, ndim, ndim>> solver(val);
-        hitnlls::matrix::Matrix<double, ndim, 1> eigen_vals = solver.V();
-        hitnlls::matrix::Matrix<double, ndim, ndim> eigen_vecs = solver.U();
-        for (int idx = 0; idx < ndim; ++idx) {
-            eigen_vals[idx] = std::max<double>(0, eigen_vals[idx]);
+        using std::max;
+        Matrix<float, N, N> val = BaseType::GetValue();
+        EVD<Matrix<float, N, N>> solver(val);
+        Matrix<float, N, 1> eigen_vals = solver.V();
+        Matrix<float, N, N> eigen_vecs = solver.U();
+        for (int idx = 0; idx < N; ++idx) {
+            eigen_vals[idx] = max<float>(0.0, eigen_vals[idx]);
         }
-        hitnlls::matrix::Matrix<double, ndim, ndim> eigen_vals_mat;
+        Matrix<float, N, N> eigen_vals_mat;
         eigen_vals_mat.SetIdentity();
-        for (int idx = 0; idx < ndim; ++idx) {
+        for (int idx = 0; idx < N; ++idx) {
             eigen_vals_mat(idx, idx) = eigen_vals[idx];
         }
         val = eigen_vecs * eigen_vals_mat * eigen_vecs.Transpose();
-        this->SetValue(val);
+        BaseType::SetValue(val);
     }
-
-    virtual void SetVector(const hitnlls::matrix::VectorXd &v) override {
-        if (this->CheckDim(v)) {
-            this->SetValue(Vec2Mat<ndim>(v));
-        }
-    }
-
-    virtual hitnlls::matrix::VectorXd GetVector() const override {
-        return Mat2Vec<ndim>(this->GetValue()); 
-    }
+    virtual void SetVector(const VectorXf &v) override { if (BaseType::CheckDim(v)) { BaseType::SetValue(Vec2Mat<N>(v)); } }
+    virtual VectorXf GetVector() const override { return Mat2Vec<N>(BaseType::GetValue()); }
 };
 
-} // namespace hitcadmm
+class SdcX : public VariableImpX<MatrixXf> {
+public:
+    using BaseType = VariableImpX<MatrixXf>;
+    explicit SdcX(const MatrixXf &val) : BaseType(val.Size()) { BaseType::SetValue(val); }
+
+    virtual void Project() override;
+    virtual void SetVector(const VectorXf &v) override { if (BaseType::CheckDim(v)) { BaseType::SetValue(VecX2MatX(v)); } }
+    virtual VectorXf GetVector() const override { return MatX2VecX(BaseType::GetValue()); }
+};
+
+} // namespace nlls

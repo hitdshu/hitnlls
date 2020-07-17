@@ -1,30 +1,28 @@
 #pragma once
 
-namespace hitnlls {
-namespace matrix {
-
+namespace nlls {
 template <typename E> 
 class LUP {
 public:
-    using EvalReturnType = typename ExpressionTypeTraits<E>::EvalReturnType;
-    using ElementType = typename ExpressionTypeTraits<E>::ElementType;
-    using ShapeType = typename ExpressionTypeTraits<E>::ShapeType;
-    using VectorType = Matrix<ElementType, ShapeType::NROWS, 1>;
-    using PType = Blob<int, ShapeType::NROWS>;
-
-    HITNLLS_INLINE explicit LUP(const Expression<E> &e) : e_(e.Cast()) { HITNLLS_CHECK_SQUARE_MATRIX(ShapeType) Resize(e.Rows(), e.Cols()); }
-
-    HITNLLS_INLINE void Resize(int m, int n) { shape_.Resize(m, n); lu_.Resize(m, n); inv_.Resize(m, n); p_.Resize(m); }
+    using ElementType = typename E::ElementType;
+    using ConstElementType = typename E::ConstElementType;
+    static constexpr int NR = E::NR;
+    static constexpr int NC = E::NC;
+    using EvalType = Matrix<ElementType, NR, NC>;
+    using VectorType = Matrix<ElementType, NR, 1>;
+    using PType = internal::Blob<int, NR>;
+    NLLS_INLINE explicit LUP(const internal::Expression<E> &e) : e_(e.Cast()) { NLLS_CHECK_DIM_COMPATIBLE(NR, NC) Init(); }
+    NLLS_INLINE explicit LUP(const MatrixBase<E> &e) : e_(e.Cast()) { NLLS_CHECK_DIM_COMPATIBLE(NR, NC) Init(); }
     void Compute() {
-        lu_.NoAlias() = e_;
+        lu_ = e_;
         for (int i = 0; i < Rows(); ++i) {
             p_[i] = i;
         }
         for (int i = 0; i < Rows(); ++i) {
             int p = i;
-            ElementType pv = std::abs(lu_(i, i));
+            ElementType pv = nlls::abs(lu_(i, i));
             for (int j = i + 1; j < Rows(); ++j) {
-                ElementType tmp_pv = std::abs(lu_(j, i));
+                ElementType tmp_pv = nlls::abs(lu_(j, i));
                 if (tmp_pv > pv) {
                     p = j;
                     pv = tmp_pv;
@@ -43,19 +41,20 @@ public:
                 }
             }
         }
-        VectorType b(Rows(), ElementType(0));
+        VectorType b(Rows(), ElementType(0.0));
         for (int i = 0; i < Rows(); ++i) {
-            b[i] = 1;
+            b[i] = ElementType(1.0);
             VectorType x = Solve(b);
             for (int j = 0; j < Rows(); ++j) {
                 inv_(j, i) = x[j];
             }
-            b[i] = 0;
+            b[i] = ElementType(0.0);
         }
     }
     template <typename VE>
-    VectorType Solve(const Expression<VE> &b) const {
-        HITNLLS_CHECK_DIM_COMPARATIBLE(VectorType, VE)
+    VectorType Solve(const internal::Expression<VE> &b) const {
+        NLLS_CHECK_DIM_COMPATIBLE(NR, VE::NR)
+        NLLS_CHECK_DIM_COMPATIBLE(1, VE::NC)
         VectorType x(Rows());
         for (int i = 0; i < Rows(); ++i) {
             x[i] = b.Cast()(p_[i], 0);
@@ -71,21 +70,23 @@ public:
         }
         return x;
     }
-    HITNLLS_INLINE const EvalReturnType &Inverse() const { return inv_; }
-
-    HITNLLS_INLINE int Rows() const { return shape_.Rows(); }
-    HITNLLS_INLINE int Cols() const { return shape_.Cols(); }
-    HITNLLS_INLINE int Size() const { return shape_.Size(); }
-    HITNLLS_INLINE const ShapeType &Shape() const { return shape_; }
-
+    NLLS_INLINE const EvalType &Inverse() const { return inv_; }
+    NLLS_INLINE int Rows() const { return e_.Rows(); }
+    NLLS_INLINE int Cols() const { return e_.Cols(); }
+    NLLS_INLINE int Size() const { return e_.Size(); }
 private:
-    EvalReturnType lu_;
-    EvalReturnType inv_;
-    PType p_;
+    void Init() {
+        int m = e_.Rows();
+        int n = e_.Cols();
+        lu_.Resize(m, n); 
+        inv_.Resize(m, n); 
+        p_.Resize(m);
+        Compute();
+    }
 
     const E &e_;
-    ShapeType shape_;
+    PType p_;
+    EvalType lu_;
+    EvalType inv_;
 };
-
-} // namespace matrix
-} // namespace hitnlls
+} // namespace nlls

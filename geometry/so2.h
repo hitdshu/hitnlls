@@ -1,97 +1,93 @@
 #pragma once
 
-#include "geometry/macro.h"
-#include "geometry/base.h"
-#include "geometry/jet.h"
+#include "../matrix/dense.h"
 
-namespace hitnlls {
-namespace geometry {
+#include "macros.h"
+#include "traits.h"
+#include "utils.h"
+#include "base.h"
 
-template <typename T> class SO2;
-template <typename T> class SO2Tangent;
-
+namespace nlls {
+namespace internal {
 template <typename T>
 struct LieGroupTraits<SO2<T>> {
-    static const int DIM = 2;
-    static const int DOF = 1;
+    static constexpr int DIM = 2;
+    static constexpr int DOF = 1;
     using Scalar = T;
-    using Vector = matrix::Matrix<Scalar, DIM, 1>;
-    using Storage = matrix::Matrix<Scalar, DIM, 1>;
-    using Adjoint = T;
     using LieGroup = SO2<T>;
     using Tangent = SO2Tangent<T>;
-
-    using Rotation = matrix::Matrix<Scalar, DIM, DIM>;
-    using Transformation = matrix::Matrix<Scalar, DIM + 1, DIM + 1>;
+    using Storage = Matrix<Scalar, 2, 1>;
 };
-
 template <typename T>
 struct TangentTraits<SO2Tangent<T>> {
     static const int DIM = 2;
     static const int DOF = 1;
     using Scalar = T;
-    using Storage = T;
     using LieGroup = SO2<T>;
     using Tangent = SO2Tangent<T>;
 };
+} // namespace internal
 
 template <typename T>
-class SO2 : public LieGroupBase<SO2<T>> {
+class SO2 : public internal::LieGroupBase<SO2<T>> {
 public:
     using ThisType = SO2<T>;
-    using BaseType = LieGroupBase<SO2<T>>;
-    HITNLLS_INHERIT_GROUP_PROPERTIES
-    using Rotation = typename LieGroupTraits<ThisType>::Rotation;
-    using Transformation = typename LieGroupTraits<ThisType>::Transformation;
+    using BaseType = internal::LieGroupBase<SO2<T>>;
+    NLLS_INHERIT_GROUP_PROPERTIES
+    NLLS_EXTRACT_GROUP_STORAGE(SO2)
 
-    SO2(const Scalar &real, const Scalar &imag) { Real() = real; Imag() = imag; }
-    SO2(const Scalar &theta) { Real() = cos(theta); Imag() = sin(theta); }
-    SO2(const Rotation &rot) { Real() = rot(0, 0); Imag() = rot(1, 0); }
-    SO2() { Real() = 1.0; Imag() = 0.0; }
+    explicit SO2(const Scalar &real, const Scalar &imag) { Real() = real; Imag() = imag; }
+    explicit SO2(const Scalar &theta) { Real() = nlls::cos(theta); Imag() = nlls::sin(theta); }
+    explicit SO2(const Rotation &rot) { Real() = rot(0, 0); Imag() = rot(1, 0); }
+    explicit SO2(const Scalar *data) { Real() = data[0]; Imag() = data[1]; }
+    explicit SO2() { Real() = Scalar(1.0); Imag() = Scalar(0.0); }
 
     LieGroup Inverse() const { return LieGroup(Real(), -Imag()); }
-    Tangent Log() const { return Tangent(Angle()); }
-    Adjoint Adj() const { return Adjoint(1.0); } 
     LieGroup Compose(const LieGroup &g) const {
         Scalar cr = Real() * g.Real() - Imag() * g.Imag();
         Scalar ci = Real() * g.Imag() + Imag() * g.Real();
         LieGroup result(cr, ci);
         return result;
     }
-    Vector Act(const Vector &v) const { return ToRotation() * v; }
+    Vector Act(const Vector &v, Dvdl *dl = nullptr) const {
+        Rotation rot = ToRotation();
+        Vector result = rot * v; 
+        if (dl) { dl[0] = -result[1]; dl[1] = result[0]; }
+        return result;
+    }
+    Tangent Log() const { Tangent result(Angle()); return result; }
+    Adjoint Adj() const { return Adjoint(1.0); } 
+    Rotation ToRotation() const { Rotation rot; rot << Real(), -Imag(), Imag(), Real(); return rot; }
+    Transform ToTransform() const { Transform tf = Transform::Identity(); tf.Block(0, 0, 2, 2) = ToRotation(); return tf; }
 
-    Rotation ToRotation() const {
-        Rotation rot;
-        rot << Real(), -Imag(), Imag(), Real();
-        return rot;
-    }
-    Transformation ToTransform() const {
-        Transformation tf = Transformation::Identity();
-        tf.Block(0, 0, 2, 2) = ToRotation();
-        return tf;
-    }
-    void Normalize() { BaseType::data_.Normalize(); }
-    Scalar Angle() const { return atan2(Imag(), Real()); }
-    Scalar &Real() { return BaseType::data_[0]; }
-    const Scalar &Real() const { return BaseType::data_[0]; }
-    Scalar &Imag() { return BaseType::data_[1]; }
-    const Scalar &Imag() const { return BaseType::data_[1]; }
+    void Normalize() { data_.Normalize(); }
+    Scalar Angle() const { return nlls::atan2(Imag(), Real()); }
+    Scalar &Real() { return data_[0]; }
+    const Scalar &Real() const { return data_[0]; }
+    Scalar &Imag() { return data_[1]; }
+    const Scalar &Imag() const { return data_[1]; }
+
+private:
+    Storage data_;
 };
 
 template <typename T>
-class SO2Tangent : public TangentBase<SO2Tangent<T>> {
+class SO2Tangent : public internal::TangentBase<SO2Tangent<T>> {
 public:
     using ThisType = SO2Tangent<T>;
-    using BaseType = TangentBase<SO2Tangent<T>>;
-    HITNLLS_INHERIT_TANGENT_PROPERTIES
+    using BaseType = internal::TangentBase<SO2Tangent<T>>;
+    NLLS_INHERIT_TANGENT_PROPERTIES
 
     SO2Tangent(const Scalar &theta) { Angle() = theta; }
-    SO2Tangent() { Angle() = 0.0; }
+    SO2Tangent(const Scalar *data) { Angle() = *data; }
+    SO2Tangent() { Angle() = Scalar(0.0); }
 
-    LieGroup Exp() const { return LieGroup(cos(Angle()), sin(Angle())); }
+    LieGroup Exp() const { return LieGroup(nlls::cos(Angle()), nlls::sin(Angle())); }
+    LieAlg Generator(int i) const { return Skew2<Scalar>(Scalar(1.0)); }
+    LieAlg Hat() const { return Skew2<Scalar>(Angle()); }
 
-    const Scalar &Angle() const { return BaseType::data_; }
-    Scalar &Angle() { return BaseType::data_; }
+    const Scalar &Angle() const { return BaseType::Data()[0]; }
+    Scalar &Angle() { return BaseType::Data()[0]; }
 };
 
 using SO2d = SO2<double>;
@@ -99,5 +95,4 @@ using SO2f = SO2<float>;
 using SO2dTangent = SO2Tangent<double>;
 using SO2fTangent = SO2Tangent<float>;
 
-} // namespace geometry
-} // namespace hitnlls
+} // namespace nlls

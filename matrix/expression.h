@@ -1,183 +1,231 @@
 #pragma once
 
-namespace hitnlls {
-namespace matrix {
-
+namespace nlls {
+namespace internal {
 template <class Derived>
 class Expression {
 public:
-    HITNLLS_CRTP
-    HITNLLS_CRTP_ENSURE(Expression)
-
-    HITNLLS_INLINE void Resize(int m, int n) { Cast().Resize(m, n); }
-
-    HITNLLS_INLINE int Rows() const { return Cast().Rows(); }
-    HITNLLS_INLINE int Cols() const { return Cast().Cols(); }
-    HITNLLS_INLINE int Size() const { return Cast().Size(); }
-
-    HITNLLS_EXPRESSION_DEFINE_ALIASING
-    HITNLLS_INLINE Derived &NoAlias() { no_aliasing_ = true; return Cast(); }
-
-    HITNLLS_INLINE bool Aliasing() const { return Derived::ALIASING && !no_aliasing_; }
-    HITNLLS_INLINE TransposeExpression<Derived> Transpose() const { return TransposeExpression<Derived>(Cast()); }
-    HITNLLS_INLINE InverseExpression<Derived> Inverse() const { return InverseExpression<Derived>(Cast()); }
-    HITNLLS_INLINE BlockExpression<Derived> Block(int i, int j, int p, int q, int r = 1, int c = 1) const { return BlockExpression<Derived>(Cast(), i, j, p, q, r, c); }
-    HITNLLS_INLINE BlockExpression<Derived> Row(int i) const { return BlockExpression<Derived>(Cast(), i, 0, 1, Cols()); }
-    HITNLLS_INLINE BlockExpression<Derived> Col(int j) const { return BlockExpression<Derived>(Cast(), 0, j, Rows(), 1); }
-    HITNLLS_INLINE SqrtExpression<Derived> Sqrt() const { return SqrtExpression<Derived>(Cast()); }
-    HITNLLS_INLINE NormalizedExpression<Derived> Normalized() const { return NormalizedExpression<Derived>(Cast()); }
-    HITNLLS_INLINE LUP<Derived> Lup() const { return LUP<Derived>(Cast()); }
-    HITNLLS_INLINE LLT<Derived> Llt() const { return LLT<Derived>(Cast()); }
-    HITNLLS_INLINE QR<Derived> Qr() const { return QR<Derived>(Cast()); }
-    HITNLLS_INLINE EVD<Derived> Evd() const { return EVD<Derived>(Cast()); }
-    HITNLLS_INLINE SVD<Derived> Svd() const { return SVD<Derived>(Cast()); }
+    NLLS_CRTP_REF
+    NLLS_MATRIX_EXTRACT_TYPES(Derived)
+    NLLS_INLINE int Rows() const { return Cast().Rows(); }
+    NLLS_INLINE int Cols() const { return Cast().Cols(); }
+    NLLS_INLINE ConstElementType operator()(int r, int c) const { return Cast()(r, c); }
+    NLLS_INLINE int Size() const { return Cast().Rows() * Cast().Cols(); }
+    ElementType Norm() const {
+        ElementType result(0.0);
+        int nrows = Rows();
+        int ncols = Cols();
+        for (int r = 0; r < nrows; ++r) {
+            for (int c = 0; c < ncols; ++c) {
+                result += nlls::pow(this->operator()(r, c), 2);
+            }
+        }
+        return nlls::sqrt(result);
+    }
+    ElementType Trace() const {
+        ElementType result(0.0);
+        int nrows = Rows();
+        int ncols = Cols();
+        int n = (nrows > ncols) ? ncols : nrows;
+        for (int i = 0; i < n; ++i) {
+            result += this->operator()(i, i);
+        }
+        return result;
+    }
+    template <class EO>
+    ElementType Dot(const Expression<EO> &eo) const {
+        NLLS_CHECK_DIM_COMPATIBLE(NR, EO::NR)
+        NLLS_CHECK_DIM_COMPATIBLE(NC, EO::NC)
+        ElementType result(0.0);
+        for (int i = 0; i < Rows(); ++i) {
+            for (int j = 0; j < Cols(); ++j) {
+                result += this->operator()(i, j) * eo(i, j);
+            }
+        }
+        return result;
+    }
+    NLLS_INLINE NormalizedExp<Derived> Normalized() const { return NormalizedExp<Derived>(Cast()); }
+    NLLS_INLINE TransposeExp<Derived> Transpose() const { return TransposeExp<Derived>(Cast()); }
+    NLLS_INLINE InverseExp<Derived> Inverse() const { return InverseExp<Derived>(Cast()); }
+    NLLS_INLINE ElementwiseExp<Derived> Transform(const std::function<ElementType(ConstElementType)> &op) const { return ElementwiseExp<Derived>(Cast(), op); }
+    NLLS_INLINE ElementwiseExp<Derived> Sqrt() const { return ElementwiseExp<Derived>(Cast(), [](ConstElementType v) { return ElementType(nlls::sqrt(v)); }); }
+    NLLS_INLINE ElementwiseExp<Derived> Power(int n) const { return ElementwiseExp<Derived>(Cast(), [n](ConstElementType v) { return ElementType(nlls::pow(v, n)); }); }
+    NLLS_INLINE BlockExp<Derived> Block(int i, int j, int p, int q, int rs = 1, int cs = 1) const { return BlockExp<Derived>(Cast(), i, j, p, q, rs, cs); }
+    NLLS_INLINE BlockExp<Derived> Row(int i) const { return BlockExp<Derived>(Cast(), i, 0, 1, Cols()); }
+    NLLS_INLINE BlockExp<Derived> Col(int j) const { return BlockExp<Derived>(Cast(), 0, j, Rows(), 1); }
+    NLLS_INLINE NoAliasExp<Derived> NoAlias() const { return NoAliasExp<Derived>(Cast()); }
+    LUP<Derived> Lup() const { return LUP<Derived>(Cast()); }
+    LLT<Derived> Llt() const { return LLT<Derived>(Cast()); }
+    QR<Derived> Qr() const { return QR<Derived>(Cast()); }
+    EVD<Derived> Evd() const { return EVD<Derived>(Cast()); }
+    SVD<Derived> Svd() const { return SVD<Derived>(Cast()); }
+    NLLS_CRTP_DEC(Expression)
 };
-
+template <class E>
+struct ExpressionTraits<TransposeExp<E>> {
+    using ConstElementType = typename E::ConstElementType;
+    using ElementType = typename E::ElementType;
+    static constexpr int NR = E::NC;
+    static constexpr int NC = E::NR;
+    static constexpr bool A = true;
+    static constexpr int C = E::C + 1;
+};
+template <typename E>
+class TransposeExp : public Expression<TransposeExp<E>> {
+public:
+    NLLS_MATRIX_EXTRACT_TYPES(TransposeExp)
+    NLLS_INLINE explicit TransposeExp(const Expression<E> &e) : e_(e.Cast()) {}
+    NLLS_INLINE int Rows() const { return e_.Cols(); }
+    NLLS_INLINE int Cols() const { return e_.Rows(); }
+    NLLS_INLINE ConstElementType operator()(int r, int c) const { return e_(c, r); }
+private:
+    const E &e_;
+};
+template <class E>
+struct ExpressionTraits<NormalizedExp<E>> {
+    using ConstElementType = const typename E::ElementType;
+    using ElementType = typename E::ElementType;
+    static constexpr int NR = E::NR;
+    static constexpr int NC = E::NC;
+    static constexpr bool A = E::A;
+    static constexpr int C = E::C + 1;
+};
+template <typename E>
+class NormalizedExp : public Expression<NormalizedExp<E>> {
+public:
+    NLLS_MATRIX_EXTRACT_TYPES(NormalizedExp)
+    NLLS_INLINE explicit NormalizedExp(const Expression<E> &e) : e_(e.Cast()) { norm_ = e_.Norm(); }
+    NLLS_INLINE int Rows() const { return e_.Rows(); }
+    NLLS_INLINE int Cols() const { return e_.Cols(); }
+    NLLS_INLINE ElementType operator()(int r, int c) const { return e_(r, c) / norm_; }
+private:
+    const E &e_;
+    ElementType norm_;
+};
+template <class E>
+struct ExpressionTraits<InverseExp<E>> {
+    using ConstElementType = const typename E::ElementType &;
+    using ElementType = typename E::ElementType;
+    static constexpr int NR = E::NR;
+    static constexpr int NC = E::NC;
+    static constexpr bool A = false;
+    static constexpr int C = 1;
+};
+template <typename E>
+class InverseExp : public Expression<InverseExp<E>> {
+public:
+    NLLS_MATRIX_EXTRACT_TYPES(InverseExp)
+    NLLS_INLINE explicit InverseExp(const Expression<E> &e) : lup_(e.Cast()) { NLLS_CHECK_DIM_COMPATIBLE(NR, NC) }
+    NLLS_INLINE int Rows() const { return lup_.Rows(); }
+    NLLS_INLINE int Cols() const { return lup_.Cols(); }
+    NLLS_INLINE ConstElementType operator()(int r, int c) const { return lup_.Inverse()(r, c); }
+private:
+    LUP<E> lup_;
+};
+template <class E>
+struct ExpressionTraits<ElementwiseExp<E>> {
+    using ConstElementType = const typename E::ElementType;
+    using ElementType = typename E::ElementType;
+    static constexpr int NR = E::NR;
+    static constexpr int NC = E::NC;
+    static constexpr bool A = E::A;
+    static constexpr int C = E::C + 1;
+};
+template <typename E>
+class ElementwiseExp : public Expression<ElementwiseExp<E>> {
+public:
+    NLLS_MATRIX_EXTRACT_TYPES(ElementwiseExp)
+    using OpType = std::function<ElementType(ConstElementType)>;
+    NLLS_INLINE explicit ElementwiseExp(const Expression<E> &e, const OpType &op) : e_(e.Cast()), op_(op) {}
+    NLLS_INLINE int Rows() const { return e_.Rows(); }
+    NLLS_INLINE int Cols() const { return e_.Cols(); }
+    NLLS_INLINE ElementType operator()(int r, int c) const { return op_(e_(r, c)); }
+private:
+    const E &e_;
+    OpType op_;
+};
+template <class E>
+struct ExpressionTraits<BlockExp<E>> {
+    using ElementType = typename E::ElementType;
+    using ConstElementType = const ElementType;
+    static constexpr int NR = 0;
+    static constexpr int NC = 0;
+    static constexpr bool A = true;
+    static constexpr int C = E::C + 1;
+};
+template <typename E>
+class BlockExp : public Expression<BlockExp<E>> {
+public:
+    NLLS_MATRIX_EXTRACT_TYPES(BlockExp)
+    NLLS_INLINE explicit BlockExp(const Expression<E> &e, int i, int j, int p, int q, int rs = 1, int cs = 1) : e_(e.Cast()), i_(i), j_(j), p_(p), q_(q), rs_(rs), cs_(cs) {}
+    NLLS_INLINE int Rows() const { return p_; }
+    NLLS_INLINE int Cols() const { return q_; }
+    NLLS_INLINE ConstElementType operator()(int r, int c) const { return e_(r * rs_ + i_, c * cs_ + j_); }
+private:
+    const E &e_;
+    int i_;
+    int j_;
+    int p_;
+    int q_;
+    int rs_;
+    int cs_;
+};
+template <class T>
+struct ExpressionTraits<ScalarExp<T>> {
+    using ElementType = RemoveConstRefType<T>;
+    using ConstElementType = const ElementType &;
+    static constexpr int NR = 0;
+    static constexpr int NC = 0;
+    static constexpr bool A = false;
+    static constexpr int C = 1;
+};
+template <typename T>
+class ScalarExp : public Expression<ScalarExp<T>> {
+public:
+    NLLS_MATRIX_EXTRACT_TYPES(ScalarExp)
+    NLLS_INLINE explicit ScalarExp(const T &v) : v_(v) {}
+    NLLS_INLINE int Rows() const { return 0; }
+    NLLS_INLINE int Cols() const { return 0; }
+    NLLS_INLINE ConstElementType operator()(int r, int c) const { return v_; }
+private:
+    ElementType v_;
+};
+template <class E>
+struct ExpressionTraits<NoAliasExp<E>> {
+    using ElementType = typename E::ElementType;
+    using ConstElementType = typename E::ConstElementType;
+    static constexpr int NR = E::NR;
+    static constexpr int NC = E::NC;
+    static constexpr bool A = false;
+    static constexpr int C = E::C;
+};
+template <typename E>
+class NoAliasExp : public Expression<NoAliasExp<E>> {
+public:
+    NLLS_MATRIX_EXTRACT_TYPES(NoAliasExp)
+    NLLS_INLINE explicit NoAliasExp(const Expression<E> &e) : e_(e.Cast()) {}
+    NLLS_INLINE int Rows() const { return e_.Rows(); }
+    NLLS_INLINE int Cols() const { return e_.Cols(); }
+    NLLS_INLINE ConstElementType operator()(int r, int c) const { return e_(r, c); }
+private:
+    const E e_;
+};
 template <typename Derived> 
 std::ostream &operator<<(std::ostream &os, const Expression<Derived> &m) {
-    for (int i = 0; i < m.Rows(); ++i) {
-        for (int j = 0; j < m.Cols(); ++j) {
-            os << std::setw(12) << m.Cast().At(i, j) << " ";
+    int nrows = m.Rows();
+    int ncols = m.Cols();
+    for (int r = 0; r < nrows; ++r) {
+        for (int c = 0; c < ncols; ++c) {
+            os << std::right << std::setw(12) << m(r, c);
+            if (c != ncols - 1) {
+                std::cout << " ";
+            }
         }
-        if (i != m.Rows() - 1) {
+        if (r != nrows - 1) {
             os << std::endl;
         }
     }
     return os;
 }
-
-template <typename T>
-class ScalarExpression : public Expression<ScalarExpression<T>> {
-public:
-    using EvalReturnType = T;
-    using ElementType = T;
-    using ShapeType = MatrixShape<DYNAMIC, DYNAMIC>;
-    static const bool ALIASING = false;
-
-    HITNLLS_INLINE explicit ScalarExpression(const T &v) : scalar_(v) { Resize(1, 1); }
-
-    HITNLLS_INLINE operator ElementType() { return scalar_; }
-
-    HITNLLS_INLINE void Resize(int m, int n) { shape_.Resize(m, n); }
-
-    HITNLLS_INLINE const ElementType &At(int i, int j) const { return scalar_; }
-    HITNLLS_INLINE int Rows() const { return shape_.Rows(); }
-    HITNLLS_INLINE int Cols() const { return shape_.Cols(); }
-    HITNLLS_INLINE int Size() const { return shape_.Size(); }
-    HITNLLS_INLINE const ShapeType &Shape() const { return shape_; }
-    HITNLLS_EXPRESSION_DEFINE_NORM
-    HITNLLS_EXPRESSION_DEFINE_TRACE
-    HITNLLS_INLINE const ElementType &operator()(int i, int j) const { return At(i, j); }
-
-private:
-    T scalar_;
-    ShapeType shape_;
-};
-
-template <typename E>
-class TransposeExpression : public Expression<TransposeExpression<E>> {
-public:
-    using EvalReturnType = typename TransposeTypeTraits<E>::EvalReturnType;
-    using ElementType = typename TransposeTypeTraits<E>::ElementType;
-    using ShapeType = typename TransposeTypeTraits<E>::ShapeType;
-    static const bool ALIASING = true;
-
-    HITNLLS_INLINE explicit TransposeExpression(const Expression<E> &e) : e_(e.Cast()) { Resize(e.Cols(), e.Rows()); }
-
-    HITNLLS_INLINE void Resize(int m, int n) { shape_.Resize(m, n); }
-
-    HITNLLS_INLINE ElementType At(int i, int j) const { return e_.Cast().At(j, i); }
-    HITNLLS_INLINE int Rows() const { return shape_.Rows(); }
-    HITNLLS_INLINE int Cols() const { return shape_.Cols(); }
-    HITNLLS_INLINE int Size() const { return shape_.Size(); }
-    HITNLLS_INLINE const ShapeType &Shape() const { return shape_; }
-    HITNLLS_EXPRESSION_DEFINE_NORM
-    HITNLLS_EXPRESSION_DEFINE_TRACE
-    HITNLLS_INLINE ElementType operator()(int i, int j) const { return At(i, j); }
-
-private:
-    const E &e_;
-    ShapeType shape_;
-};
-
-template <typename E>
-class InverseExpression : public Expression<InverseExpression<E>> {
-public:
-    using EvalReturnType = typename ExpressionTypeTraits<E>::EvalReturnType;
-    using ElementType = typename ExpressionTypeTraits<E>::ElementType;
-    using ShapeType = typename ExpressionTypeTraits<E>::ShapeType;
-    static const bool ALIASING = false;
-
-    HITNLLS_INLINE explicit InverseExpression(const Expression<E> &e) : lup_(e.Cast()) { HITNLLS_CHECK_SQUARE_MATRIX(ShapeType) Resize(e.Cols(), e.Rows()); lup_.Compute(); }
-
-    HITNLLS_INLINE void Resize(int m, int n) { shape_.Resize(m, n); lup_.Resize(m, n); }
-
-    HITNLLS_INLINE const ElementType &At(int i, int j) const { return lup_.Inverse().At(i, j); }
-    HITNLLS_INLINE int Rows() const { return shape_.Rows(); }
-    HITNLLS_INLINE int Cols() const { return shape_.Cols(); }
-    HITNLLS_INLINE int Size() const { return shape_.Size(); }
-    HITNLLS_INLINE const ShapeType &Shape() const { return shape_; }
-    HITNLLS_EXPRESSION_DEFINE_NORM
-    HITNLLS_EXPRESSION_DEFINE_TRACE
-    HITNLLS_INLINE const ElementType &operator()(int i, int j) const { return At(i, j); }
-
-private:
-    LUP<E> lup_;
-    ShapeType shape_;
-};
-
-template <typename E>
-class SqrtExpression : public Expression<SqrtExpression<E>> {
-public:
-    using EvalReturnType = typename ExpressionTypeTraits<E>::EvalReturnType;
-    using ElementType = typename ExpressionTypeTraits<E>::ElementType;
-    using ShapeType = typename ExpressionTypeTraits<E>::ShapeType;
-    static const bool ALIASING = false;
-
-    HITNLLS_INLINE explicit SqrtExpression(const Expression<E> &e) : llt_(e.Cast()) { HITNLLS_CHECK_SQUARE_MATRIX(ShapeType) Resize(e.Rows(), e.Rows()); llt_.Compute(); }
-
-    HITNLLS_INLINE void Resize(int m, int n) { shape_.Resize(m, n); llt_.Resize(m, n); }
-
-    HITNLLS_INLINE const ElementType &At(int i, int j) const { return llt_.L().At(i, j); }
-    HITNLLS_INLINE int Rows() const { return shape_.Rows(); }
-    HITNLLS_INLINE int Cols() const { return shape_.Cols(); }
-    HITNLLS_INLINE int Size() const { return shape_.Size(); }
-    HITNLLS_INLINE const ShapeType &Shape() const { return shape_; }
-    HITNLLS_EXPRESSION_DEFINE_NORM
-    HITNLLS_EXPRESSION_DEFINE_TRACE
-    HITNLLS_INLINE const ElementType &operator()(int i, int j) const { return At(i, j); }
-
-private:
-    LLT<E> llt_;
-    ShapeType shape_;
-};
-
-template <typename E>
-class NormalizedExpression : public Expression<NormalizedExpression<E>> {
-public:
-    using EvalReturnType = typename ExpressionTypeTraits<E>::EvalReturnType;
-    using ElementType = typename ExpressionTypeTraits<E>::ElementType;
-    using ShapeType = typename ExpressionTypeTraits<E>::ShapeType;
-    static const bool ALIASING = false;
-
-    HITNLLS_INLINE explicit NormalizedExpression(const Expression<E> &e) : e_(e.Cast()) { Resize(e.Rows(), e.Cols()); norm_ = e_.Norm(); }
-
-    HITNLLS_INLINE void Resize(int m, int n) { shape_.Resize(m, n); }
-
-    HITNLLS_INLINE ElementType At(int i, int j) const { return e_.At(i, j) / norm_; }
-    HITNLLS_INLINE int Rows() const { return shape_.Rows(); }
-    HITNLLS_INLINE int Cols() const { return shape_.Cols(); }
-    HITNLLS_INLINE int Size() const { return shape_.Size(); }
-    HITNLLS_INLINE const ShapeType &Shape() const { return shape_; }
-    HITNLLS_EXPRESSION_DEFINE_NORM
-    HITNLLS_EXPRESSION_DEFINE_TRACE
-    HITNLLS_INLINE ElementType operator()(int i, int j) const { return At(i, j); }
-
-private:
-    const E &e_;
-    ShapeType shape_;
-    ElementType norm_;
-};
-
-} // namespace matrix
-} // namespace hitnlls
+} // namespace internal
+} // namespace nlls

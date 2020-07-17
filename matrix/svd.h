@@ -1,45 +1,47 @@
 #pragma once
 
-namespace hitnlls {
-namespace matrix {
-
+namespace nlls {
 template <typename E> 
 class SVD {
 public:
-    using EvalReturnType = typename ExpressionTypeTraits<E>::EvalReturnType;
-    using ElementType = typename ExpressionTypeTraits<E>::ElementType;
-    using ShapeType = typename ExpressionTypeTraits<E>::ShapeType;
-    using UType = Matrix<ElementType, ShapeType::NROWS, MinDimTraits<ShapeType::NROWS, ShapeType::NCOLS>::N>;
-    using VType = Matrix<ElementType, ShapeType::NCOLS, ShapeType::NCOLS>;
-    using SType = Matrix<ElementType, MinDimTraits<ShapeType::NROWS, ShapeType::NCOLS>::N, 1>;
-
-    HITNLLS_INLINE explicit SVD(const Expression<E> &e) : e_(e.Cast()) { Resize(e.Rows(), e.Cols()); }
-
-    HITNLLS_INLINE void Resize(int m, int n) { shape_.Resize(m, n); u_.Resize(m, std::min(m, n)); v_.Resize(n, n); s_.Resize(std::min(m, n), 1); }
+    using ElementType = typename E::ElementType;
+    using ConstElementType = typename E::ConstElementType;
+    static constexpr int NR = E::NR;
+    static constexpr int NC = E::NC;
+    using EvalType = Matrix<ElementType, NR, NC>;
+    using UType = Matrix<ElementType, NR, (NR > NC) ? NC : NR>;
+    using SType = Matrix<ElementType, (NR > NC) ? NC : NR, 1>;
+    using VType = Matrix<ElementType, NC, NC>;
+    NLLS_INLINE explicit SVD(const internal::Expression<E> &e) : e_(e.Cast()) { Init(); }
+    NLLS_INLINE explicit SVD(const MatrixBase<E> &e) : e_(e.Cast()) { Init(); }
     void Compute() {
+        if (ic_) {
+            return;
+        }
         const int max_iter_num = 10;
-        const ElementType tol = 1e-7;
+        const ElementType tol(1e-6);
         const int m = Rows();
         const int n = Cols();
         const int d = std::min(m, n);
-        EvalReturnType a(e_);
+        EvalType a(e_);
         v_.SetIdentity();
-        double ratio = 1.0;
+        ElementType ratio(1.0);
         ElementType norm = a.Norm();
+        ElementType norm_sq = norm * norm;
         for (int iter = 0; iter < max_iter_num && ratio > tol ; ++iter) {
             for (int i = 0; i < n; ++i) {
                 for (int j = i + 1; j < n; ++j) {
                     ElementType cost;
                     ElementType sint;
-                    ElementType aii = 0;
-                    ElementType aij = 0;
-                    ElementType ajj = 0;
+                    ElementType aii(0.0);
+                    ElementType aij(0.0);
+                    ElementType ajj(0.0);
                     for (int k = 0; k < m; ++k) {
                         aii += a(k, i) * a(k, i);
                         aij += a(k, i) * a(k, j);
                         ajj += a(k, j) * a(k, j);
                     }
-                    if (Helper::CalcJacobRotCoeff<ElementType>(aii, aij, ajj, cost, sint)) {
+                    if (internal::CalcJacobRotCoeff<ElementType>(aii, aij, ajj, cost, sint)) {
                         for (int k = 0; k < m; ++k) {
                             ElementType aki = a(k, i);
                             a(k, i) = cost * a(k, i) - sint * a(k, j);
@@ -53,26 +55,20 @@ public:
                     }
                 }
             }
-            ElementType off_norm = 0;
+            ElementType diag_norm = 0;
             for (int i = 0; i < n; ++i) {
-                for (int j = i + 1; j < n; ++j) {
-                    ElementType tmp = 0;
-                    for (int k = 0; k < m; ++k) {
-                        tmp += a(k, i) * a(k, j);
-                    }
-                    off_norm += std::pow(tmp, 2);
-                }
+                diag_norm += nlls::pow(a(i, i), 2);
             }
-            off_norm = std::sqrt(off_norm);
+            ElementType off_norm = nlls::sqrt(norm_sq - diag_norm);
             ratio = off_norm / norm;
         }
-        Matrix<ElementType, ShapeType::NCOLS, 1> os(n);
+        Matrix<ElementType, NC, 1> os(n);
         for (int i = 0; i < n; ++i) {
-            ElementType tmp = 0;
+            ElementType tmp(0.0);
             for (int k = 0; k < m; ++k) {
                 tmp += a(k, i) * a(k, i);
             }
-            os[i] = std::sqrt(tmp);
+            os[i] = nlls::sqrt(tmp);
         }
         std::vector<int> order(n, 0);
         for (int i = 0; i < n; ++i) {
@@ -91,26 +87,29 @@ public:
             for (int k = 0; k < n; ++k) {
                 v_(k, i) = ov(k, ni);
             }
-            
         }
+        ic_ = true;
     }
-    HITNLLS_INLINE const UType &U() const { return u_; }
-    HITNLLS_INLINE const SType &S() const { return s_; }
-    HITNLLS_INLINE const VType &V() const { return v_; }
-
-    HITNLLS_INLINE int Rows() const { return shape_.Rows(); }
-    HITNLLS_INLINE int Cols() const { return shape_.Cols(); }
-    HITNLLS_INLINE int Size() const { return shape_.Size(); }
-    HITNLLS_INLINE const ShapeType &Shape() const { return shape_; }
-
+    NLLS_INLINE const UType &U() { if (!ic_) Compute(); return u_; }
+    NLLS_INLINE const SType &S() { if (!ic_) Compute(); return s_; }
+    NLLS_INLINE const VType &V() { if (!ic_) Compute(); return v_; }
+    NLLS_INLINE int Rows() const { return e_.Rows(); }
+    NLLS_INLINE int Cols() const { return e_.Cols(); }
+    NLLS_INLINE int Size() const { return e_.Size(); }
 private:
+    void Init() {
+        int m = e_.Rows();
+        int n = e_.Cols();
+        u_.Resize(m, std::min(m, n));
+        s_.Resize(std::min(m, n), 1);
+        v_.Resize(n, n); 
+        ic_ = false;
+    }
+
+    bool ic_;
+    const E &e_;
     UType u_;
     SType s_;
     VType v_;
-
-    const E &e_;
-    ShapeType shape_;
 };
-
-} // namespace matrix
-} // namespace hitnlls
+} // namespace nlls

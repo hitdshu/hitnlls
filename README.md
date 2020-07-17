@@ -10,7 +10,7 @@ This solver uses Gauss-Newton type algorithms for NLLS problems. We define node 
 We developed a cone ADMM algorithm for convex cone optimization problem(LP/SOCP/SDP). Check files there if you feel interested.
 
 ### common
-This folder defines the register and timer, which are needed by other modules.
+This folder defines the register and timer, which are needed by other modules. Included also is a light weight logger.
 
 ### geometry
 Our customized implementation of several lie groups(SO2/SO3/SE2/SE3) can be utilized for representation and optimization of poses in 2d and 3d space. The jet class here is for auto differentiation just as ceres. The lie groups defined here can be combined with jet to make auto differentiation in mainfolds much simpler.
@@ -18,8 +18,8 @@ Our customized implementation of several lie groups(SO2/SO3/SE2/SE3) can be util
 ### matrix
 We use CRTP and expression templates to enable lazy evaluation and avoid the generation of temporaray variabls. Our api of dense matrix operations resembles those of Eigen. We mainly implement cholesky/qr/inverse/evd/svd/lup operations for dense matrix. 
 
-### nlls
-This folder contains optimizable graph which organizes nodes and factors and optimization algorithms. Currently only some simple graphs are available. We implement Gauss-Newton/LM algorithms in this folder. This folder also has our implementation of sparse block matrix and several operations on it.
+### ils
+This folder contains optimizable problem which organizes nodes and factors and optimization algorithms. We implement Gauss-Newton/LM/Doglog strategies and DENSE_QR/DENSE_CHOLESKY/SPARSE_CHOLESKY/DENSE_SCHUR algorithms in this folder.
 
 ### type
 Factors, vertices and cameras are defined here. We use variable tuples to avoid dynamic_cast in the evaluation of factors. The framework can support hand diff/auto diff/numeric diff now. Inherits Factor/FactorAutodiff/FactorNumeDiff according to your own purpose.

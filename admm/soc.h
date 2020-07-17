@@ -2,36 +2,44 @@
 
 #include <algorithm>
 
-#include "admm/variable.h"
+#include "variable.h"
 
-namespace hitcadmm {
+namespace nlls {
 
-template <int ndim>
-class Soc : public VariableImp<ndim, hitnlls::matrix::Matrix<double, ndim, 1>> {
+template <int N>
+class Soc : public VariableImp<N, Matrix<float, N, 1>> {
 public:
-    typedef std::shared_ptr<Soc> Ptr;
-
-    explicit Soc() : VariableImp<ndim, hitnlls::matrix::Matrix<double, ndim, 1>>() {}
-    explicit Soc(const hitnlls::matrix::Matrix<double, ndim, 1> &val) : VariableImp<ndim, hitnlls::matrix::Matrix<double, ndim, 1>>() { this->SetValue(val); }
+    using BaseType = VariableImp<N, Matrix<float, N, 1>>;
+    explicit Soc() : BaseType() {}
+    explicit Soc(const Matrix<float, N, 1> &val) : BaseType() { BaseType::SetValue(val); }
 
     virtual void Project() override {
-        hitnlls::matrix::Matrix<double, ndim, 1> val = this->GetValue();
-        hitnlls::matrix::Matrix<double, ndim - 1, 1> v = val.Block(0, 0, ndim - 1, 1);
-        double t = val[ndim - 1];
-        double vn = v.Norm();
+        Matrix<float, N, 1> val = BaseType::GetValue();
+        Matrix<float, N - 1, 1> v = val.Block(0, 0, N - 1, 1);
+        float t = val[N - 1];
+        float vn = v.Norm();
         if (t <= -vn) {
             val.SetZero();
         } else if (t >= vn) {
         } else {
-            double a = (vn + t) / 2;
-            val.Block(0, 0, ndim - 1, 1) *= a / vn;
-            val[ndim - 1] = a;
+            float a = (vn + t) / 2;
+            val.Block(0, 0, N - 1, 1) *= a / vn;
+            val[N - 1] = a;
         }
-        this->SetValue(val);
+        BaseType::SetValue(val);
     }
-
-    virtual void SetVector(const hitnlls::matrix::VectorXd &v) override { if (this->CheckDim(v)) this->SetValue(v); }
-    virtual hitnlls::matrix::VectorXd GetVector() const override { return this->GetValue(); }
+    virtual void SetVector(const VectorXf &v) override { if (BaseType::CheckDim(v)) { BaseType::SetValue(v); } }
+    virtual VectorXf GetVector() const override { return BaseType::GetValue(); }
 };
 
-} // namespace hitcadmm
+class SocX : public VariableImpX<VectorXf> {
+public:
+    using BaseType = VariableImpX<VectorXf>;
+    explicit SocX(const VectorXf &val) : BaseType(val.Size()) { BaseType::SetValue(val); }
+
+    virtual void Project() override;
+    virtual void SetVector(const VectorXf &v) override { if (BaseType::CheckDim(v)) { BaseType::SetValue(v); } }
+    virtual VectorXf GetVector() const override { return BaseType::GetValue(); }
+};
+
+} // namespace nlls

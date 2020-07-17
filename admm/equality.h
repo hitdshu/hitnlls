@@ -1,26 +1,21 @@
 #pragma once
 
-#include <memory>
+#include "variable.h"
 
-#include "matrix/dense.h"
-#include "admm/variable.h"
-
-namespace hitcadmm {
+namespace nlls {
 
 class Equality {
 public:
-    typedef std::shared_ptr<Equality> Ptr;
-
-    explicit Equality(const Variable::Ptr &v, const hitnlls::matrix::MatrixXd &A, const hitnlls::matrix::VectorXd &b) { v_ = v; A_ = A; b_ = b; }
+    explicit Equality(Variable *v, const MatrixXf &A, const VectorXf &b) { v_ = v; A_ = A; b_ = b; }
     
-    Variable::Ptr GetV() const { return v_; }
-    hitnlls::matrix::MatrixXd GetA() const { return A_; }
-    hitnlls::matrix::VectorXd Getb() const { return b_; }
+    Variable *GetV() const { return v_; }
+    MatrixXf GetA() const { return A_; }
+    VectorXf Getb() const { return b_; }
 
 private:
-    Variable::Ptr v_;
-    hitnlls::matrix::MatrixXd A_;
-    hitnlls::matrix::VectorXd b_;
+    Variable *v_;
+    MatrixXf A_;
+    VectorXf b_;
 };
 
-} // namespace hitcadmm
+} // namespace nlls

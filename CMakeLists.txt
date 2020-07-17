@@ -8,12 +8,18 @@ include_directories(
 ${PROJECT_SOURCE_DIR}
 )
 
+file(GLOB ADMM_CC "${PROJECT_SOURCE_DIR}/admm/*.cc")
+file(GLOB CAMERA_CC "${PROJECT_SOURCE_DIR}/camera/*.cc")
+file(GLOB COMMON_CC "${PROJECT_SOURCE_DIR}/common/*.cc")
+file(GLOB ILS_CC "${PROJECT_SOURCE_DIR}/ils/*.cc")
 file(GLOB TYPE_CC "${PROJECT_SOURCE_DIR}/type/*.cc")
-file(GLOB NLLS_CC "${PROJECT_SOURCE_DIR}/nlls/*.cc")
-
 add_library(${PROJECT_NAME} SHARED
+${ADMM_CC}
+${COMMON_CC}
+${CAMERA_CC}
+${ILS_CC}
 ${TYPE_CC}
-${NLLS_CC}
 )
-target_link_libraries(${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME}
+)
 

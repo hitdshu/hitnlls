@@ -1,20 +1,29 @@
 #pragma once
 
-#include "admm/variable.h"
+#include "variable.h"
 
-namespace hitcadmm {
+namespace nlls {
 
-template <int ndim>
-class Var : public VariableImp<ndim, hitnlls::matrix::Matrix<double, ndim, 1> > {
+template <int N>
+class Var : public VariableImp<N, Matrix<float, N, 1>> {
 public:
-    typedef std::shared_ptr<Var> Ptr;
-
-    explicit Var() : VariableImp<ndim, hitnlls::matrix::Matrix<double, ndim, 1>>() {}
-    explicit Var(const hitnlls::matrix::Matrix<double, ndim, 1> &val) : VariableImp<ndim, hitnlls::matrix::Matrix<double, ndim, 1>>() { this->SetValue(val); }
+    using BaseType = VariableImp<N, Matrix<float, N, 1>>;
+    explicit Var() : BaseType() {}
+    explicit Var(const Matrix<float, N, 1> &val) : BaseType() { BaseType::SetValue(val); }
 
     virtual void Project() override { return; }
-    virtual void SetVector(const hitnlls::matrix::VectorXd &v) override { if (this->CheckDim(v)) this->SetValue(v); }
-    virtual hitnlls::matrix::VectorXd GetVector() const override { return this->GetValue(); }
+    virtual void SetVector(const VectorXf &v) override { if (BaseType::CheckDim(v)) { BaseType::SetValue(v); } }
+    virtual const VectorXf &GetVector() const override { return BaseType::GetValue(); }
 };
 
-} // namespace hitcadmm
+class VarX : public VariableImpX<VectorXf> {
+public:
+    using BaseType = VariableImpX<VectorXf>;
+    explicit VarX(const VectorXf &val) : BaseType(val.Size()) { BaseType::SetValue(val); }
+
+    virtual void Project() override { return; }
+    virtual void SetVector(const VectorXf &v) override { if (BaseType::CheckDim(v)) { BaseType::SetValue(v); } }
+    virtual const VectorXf &GetVector() const override { return BaseType::GetValue(); }
+};
+
+} // namespace nlls

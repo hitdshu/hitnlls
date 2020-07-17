@@ -2,28 +2,37 @@
 
 #include <algorithm>
 
-#include "admm/variable.h"
+#include "variable.h"
 
-namespace hitcadmm {
+namespace nlls {
 
-template <int ndim>
-class Nnc : public VariableImp<ndim, hitnlls::matrix::Matrix<double, ndim, 1>> {
+template <int N>
+class Nnc : public VariableImp<N, Matrix<float, N, 1>> {
 public:
-    typedef std::shared_ptr<Nnc> Ptr;
-
-    explicit Nnc() : VariableImp<ndim, hitnlls::matrix::Matrix<double, ndim, 1>>() {}
-    explicit Nnc(const hitnlls::matrix::Matrix<double, ndim, 1> &val) : VariableImp<ndim, hitnlls::matrix::Matrix<double, ndim, 1>>() { this->SetValue(val); }
+    using BaseType = VariableImp<N, Matrix<float, N, 1>>;
+    explicit Nnc() : BaseType() {}
+    explicit Nnc(const Matrix<float, N, 1> &val) : BaseType() { BaseType::SetValue(val); }
 
     virtual void Project() override {
-        hitnlls::matrix::Matrix<double, ndim, 1> val = this->GetValue();
-        for (int idx = 0; idx < ndim; ++idx) {
-            val[idx] = std::max<double>(0, val[idx]);
+        using std::max;
+        Matrix<float, N, 1> val = BaseType::GetValue();
+        for (int idx = 0; idx < N; ++idx) {
+            val[idx] = max<float>(0, val[idx]);
         }
-        this->SetValue(val);
+        BaseType::SetValue(val);
     }
-
-    virtual void SetVector(const hitnlls::matrix::VectorXd &v) override { if (this->CheckDim(v)) this->SetValue(v); }
-    virtual hitnlls::matrix::VectorXd GetVector() const override { return this->GetValue(); }
+    virtual void SetVector(const VectorXf &v) override { if (BaseType::CheckDim(v)) { BaseType::SetValue(v); } }
+    virtual VectorXf GetVector() const override { return BaseType::GetValue(); }
 };
 
-} // namespace hitcadmm
+class NncX : public VariableImpX<VectorXf> {
+public:
+    using BaseType = VariableImpX<VectorXf>;
+    explicit NncX(const VectorXf &val) : BaseType(val.Size()) { BaseType::SetValue(val); }
+
+    virtual void Project() override;
+    virtual void SetVector(const VectorXf &v) override { if (BaseType::CheckDim(v)) { BaseType::SetValue(v); } }
+    virtual VectorXf GetVector() const override { return BaseType::GetValue(); }
+};
+
+} // namespace nlls
