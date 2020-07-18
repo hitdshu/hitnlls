@@ -42,3 +42,13 @@ install(
     "${CMAKE_CURRENT_BINARY_DIR}/hitnllsConfigVersion.cmake"
     DESTINATION lib/cmake/${PROJECT_NAME}
 )
+
+option(BUILD_TESTS "Build hitnlls tests." ON)
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(test)
+    add_test(
+        NAME RunHitNllsTest 
+        COMMAND HitNllsTest
+    )
+endif()

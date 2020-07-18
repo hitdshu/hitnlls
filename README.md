@@ -21,6 +21,7 @@ $ cd hitnlls && mkdir build && cd build
 $ cmake ..
 $ make
 $ sudo make install
+$ make test # optional
 ```
 
 ### usage in cmake
