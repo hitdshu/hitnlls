@@ -92,13 +92,13 @@ private:
     std::ostream os_;
 };
 
-#define ALL LOG_ALL
-#define NONE LOG_NONE
-#define DEBUG LOG_DEBUG
-#define INFO LOG_INFO
-#define WARN LOG_WARN
-#define ERROR LOG_ERROR
-#define FATAL LOG_FATAL
+#define ALL nlls::LOG_ALL
+#define NONE nlls::LOG_NONE
+#define DEBUG nlls::LOG_DEBUG
+#define INFO nlls::LOG_INFO
+#define WARN nlls::LOG_WARN
+#define ERROR nlls::LOG_ERROR
+#define FATAL nlls::LOG_FATAL
 
 #define LOG(type) \
     nlls::Logger::GetGlobalLogger() << type
